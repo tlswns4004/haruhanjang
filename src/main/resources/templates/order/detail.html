@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>주문 상세</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+<nav class="navbar navbar-expand-lg topbar sticky-top">
+    <div class="container py-2">
+        <a class="navbar-brand brand-logo" href="/diaries">하루한장</a>
+        <a href="/orders" class="btn btn-outline-secondary btn-soft">주문 목록</a>
+    </div>
+</nav>
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-9">
+            <div class="card detail-card">
+                <div class="card-body">
+
+                    <div class="mb-3 d-flex flex-wrap gap-2 align-items-center">
+                        <span class="emotion-badge"
+                              th:text="${order.status.label}"
+                              th:classappend="
+                                ${order.status.name() == 'PENDING'} ? ' badge-warning' :
+                                (${order.status.name() == 'PROCESSING'} ? ' badge-primary' :
+                                (${order.status.name() == 'COMPLETED'} ? ' badge-success' :
+                                (${order.status.name() == 'CANCELLED'} ? ' badge-danger' : '')))
+                              ">
+                            주문 접수
+                        </span>
+
+                        <span class="text-muted">
+                            생성일:
+                            <span th:text="${#temporals.format(order.createdAt, 'yyyy-MM-dd HH:mm')}">
+                                2026-04-22 22:00
+                            </span>
+                        </span>
+                    </div>
+
+                    <h1 class="detail-title mb-2" th:text="${order.title}">주문명</h1>
+
+                    <p class="text-muted mb-4">
+                        기간:
+                        <span th:text="${order.startDate}"></span>
+                        ~
+                        <span th:text="${order.endDate}"></span>
+                    </p>
+
+                    <form th:if="${order.status.name() != 'COMPLETED' and order.status.name() != 'CANCELLED'}"
+                          th:action="@{/orders/{id}/status(id=${order.id})}"
+                          method="post"
+                          class="mb-4">
+
+                        <div class="row g-2 align-items-end">
+                            <div class="col-md-4">
+                                <label class="form-label">주문 상태 변경</label>
+                                <select name="status" class="form-control">
+                                    <option value="PENDING" th:selected="${order.status.name() == 'PENDING'}">주문 접수</option>
+                                    <option value="PROCESSING" th:selected="${order.status.name() == 'PROCESSING'}">제작 중</option>
+                                    <option value="COMPLETED" th:selected="${order.status.name() == 'COMPLETED'}">제작 완료</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <button type="submit" class="btn btn-brand">상태 저장</button>
+                            </div>
+                        </div>
+                    </form>
+
+                    <div th:if="${errorMessage}" class="alert alert-danger mb-4">
+                        <span th:text="${errorMessage}"></span>
+                    </div>
+
+                    <div th:if="${order.status.name() == 'COMPLETED' or order.status.name() == 'CANCELLED'}"
+                         class="alert alert-secondary mb-4">
+                        완료되었거나 취소된 주문은 더 이상 상태를 변경할 수 없습니다.
+                    </div>
+
+                    <div class="d-flex gap-2 flex-wrap mb-4">
+                        <a th:href="@{/orders/{id}/download(id=${order.id})}"
+                           class="btn btn-outline-secondary btn-soft">
+                            JSON 다운로드
+                        </a>
+
+                        <form th:if="${order.status.name() == 'PENDING'}"
+                              th:action="@{/orders/{id}/cancel(id=${order.id})}"
+                              method="post"
+                              class="m-0">
+                            <button type="submit" class="btn btn-outline-danger btn-soft">
+                                주문 취소
+                            </button>
+                        </form>
+                    </div>
+
+                    <h4 class="section-title mb-3">포함된 기록</h4>
+
+                    <div class="card border-0 bg-light mb-3"
+                         th:each="item : ${order.orderItems}">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between flex-wrap gap-2">
+                                <div>
+                                    <div class="fw-bold" th:text="${item.diaryEntry.title}">기록 제목</div>
+                                    <div class="small text-muted" th:text="${item.diaryEntry.entryDate}">2026-04-22</div>
+                                </div>
+
+                                <a th:href="@{/diaries/{id}(id=${item.diaryEntry.id})}"
+                                   class="btn btn-outline-secondary btn-soft btn-sm">
+                                    기록 보기
+                                </a>
+                            </div>
+
+                            <div class="small text-secondary mt-2"
+                                 th:text="${#strings.length(item.diaryEntry.content) > 90 ? #strings.substring(item.diaryEntry.content,0,90) + '...' : item.diaryEntry.content}">
+                                내용
+                            </div>
+                        </div>
+                    </div>
+
+                    <h4 class="section-title mt-5 mb-3">상태 변경 이력</h4>
+
+                    <div th:if="${#lists.isEmpty(statusHistories)}" class="text-muted mb-3">
+                        아직 상태 변경 이력이 없습니다.
+                    </div>
+
+                    <div class="card border-0 bg-light mb-2"
+                         th:each="history : ${statusHistories}">
+                        <div class="card-body py-3">
+                            <div class="d-flex justify-content-between flex-wrap gap-2">
+                                <div>
+                                    <strong th:text="${
+                    history.fromStatus == 'PENDING' ? '주문 접수' :
+                    (history.fromStatus == 'PROCESSING' ? '제작 중' :
+                    (history.fromStatus == 'COMPLETED' ? '제작 완료' :
+                    (history.fromStatus == 'CANCELLED' ? '주문 취소' :
+                    (history.fromStatus == 'CREATED' ? '생성' : history.fromStatus))))
+                }">생성</strong>
+                                    →
+                                    <strong th:text="${
+                    history.toStatus == 'PENDING' ? '주문 접수' :
+                    (history.toStatus == 'PROCESSING' ? '제작 중' :
+                    (history.toStatus == 'COMPLETED' ? '제작 완료' :
+                    (history.toStatus == 'CANCELLED' ? '주문 취소' : history.toStatus)))
+                }">주문 접수</strong>
+                                </div>
+
+                                <div class="small text-muted"
+                                     th:text="${#temporals.format(history.changedAt, 'yyyy-MM-dd HH:mm')}">
+                                    2026-04-22 22:10
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <a href="/orders" class="btn btn-outline-secondary btn-soft mt-3">
+                        주문 목록으로
+                    </a>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

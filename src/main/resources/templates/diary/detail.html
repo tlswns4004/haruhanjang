@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>기록 상세</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- Google Font 최적화 -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+<nav class="navbar navbar-expand-lg topbar sticky-top">
+    <div class="container py-2">
+        <a class="navbar-brand brand-logo" href="/diaries">하루한장</a>
+        <a href="/diaries" class="btn btn-outline-secondary btn-soft btn-sm">목록으로</a>
+    </div>
+</nav>
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card detail-card">
+
+                <!-- 이미지 -->
+                <div class="detail-image-wrap" th:if="${diary.imagePath != null}">
+                    <img th:src="${diary.imagePath}"
+                         alt="기록 이미지"
+                         class="img-fluid rounded shadow-sm d-block mx-auto">
+                </div>
+
+                <div class="card-body">
+                    <!-- 감정 + 태그 -->
+                    <div class="mb-3 d-flex flex-wrap gap-2">
+                        <span class="emotion-badge"
+                              th:text="${diary.emotion != null and !#strings.isEmpty(diary.emotion) ? diary.emotion : '기분 기록'}"></span>
+
+                        <th:block th:if="${diary.tags != null and !#strings.isEmpty(diary.tags)}">
+                            <span class="tag-badge"
+                                  th:each="tag : ${#strings.arraySplit(diary.tags, ',')}"
+                                  th:text="${#strings.trim(tag)}"></span>
+                        </th:block>
+                    </div>
+
+                    <!-- 제목 -->
+                    <h1 class="detail-title mb-2" th:text="${diary.title}">제목</h1>
+
+                    <!-- 날짜 -->
+                    <p class="text-muted mb-4" th:text="${diary.entryDate}">2026-04-22</p>
+
+                    <!-- 내용 -->
+                    <div class="detail-content" th:text="${diary.content}">
+                        내용
+                    </div>
+
+                    <hr class="my-4">
+
+                    <!-- 삭제 불가 안내 메시지 -->
+                    <div th:if="${errorMessage}" class="alert alert-danger">
+                        <span th:text="${errorMessage}"></span>
+                    </div>
+
+                    <!-- 버튼 -->
+                    <div class="d-flex gap-2 flex-wrap">
+                        <a th:href="@{/diaries/{id}/edit(id=${diary.id})}" class="btn btn-brand">수정하기</a>
+
+                        <form th:action="@{/diaries/{id}/delete(id=${diary.id})}" method="post" class="m-0">
+                            <button type="submit" class="btn btn-outline-danger btn-soft">삭제하기</button>
+                        </form>
+
+                        <a href="/diaries" class="btn btn-outline-secondary btn-soft">목록으로</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>
