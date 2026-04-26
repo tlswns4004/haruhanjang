@@ -1,0 +1,31 @@
+services:
+  db:
+    image: postgres:16
+    container_name: haruhanjang-db
+    environment:
+      POSTGRES_DB: haruhanjang
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: SIGONG4004
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+  app:
+    build: .
+    container_name: haruhanjang-app
+    depends_on:
+      - db
+    ports:
+      - "8080:8080"
+    environment:
+      DB_URL: jdbc:postgresql://db:5432/haruhanjang
+      DB_USERNAME: postgres
+      DB_PASSWORD: SIGONG4004
+      FILE_UPLOAD_DIR: /app/uploads
+    volumes:
+      - upload-data:/app/uploads
+
+volumes:
+  postgres-data:
+  upload-data:
